@@ -1,0 +1,47 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7038471..7a0d0e5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -86,6 +86,9 @@ include(event_recorder.cmake)
+ # Build libs
+ add_subdirectory(lib)
+ 
++#Build CMSIS-DSP
++add_subdirectory(cmsis-dsp)
++
+ # OpenAMP
+ add_subdirectory(openamp)
+ 
+diff --git a/tflite_micro.cmake b/tflite_micro.cmake
+index 50fcb74..ae810e7 100644
+--- a/tflite_micro.cmake
++++ b/tflite_micro.cmake
+@@ -24,6 +24,13 @@ set(TFLM_OPTIMIZATION_LEVEL "-O2" CACHE STRING "TFLM kernel optimization level")
+ set(TFLM_OPTIMIZE_KERNELS_FOR "speed" CACHE STRING "TFLM kernel implementation optimization type, can be speed or size")
+ set(TFLM_BUILD_CORTEX_M_GENERIC TRUE CACHE BOOL "Build TFLM for Arm Cortex-M")
+ 
++if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++  # argument '-Ofast' is deprecated; use '-O3 -ffast-math' for the same behavior,
++  set(CMSIS_OPTIMIZATION_LEVEL "-O3" CACHE STRING "CMSIS-NN optimization level")
++else()
++  set(CMSIS_OPTIMIZATION_LEVEL "-Ofast" CACHE STRING "CMSIS-NN optimization level")
++endif()
++
+ #############################################################################
+ # Helpers
+ #############################################################################
+@@ -145,6 +152,14 @@ if (NOT ${CORE_SOFTWARE_ACCELERATOR} STREQUAL "CPU")
+         target_compile_definitions(cmsis-nn PRIVATE OPTIONAL_RESTRICT_KEYWORD=__restrict)
+     endif()
+ 
++    target_compile_options(cmsis-nn PRIVATE
++        ${CMSIS_OPTIMIZATION_LEVEL})
++
++    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++      target_compile_options(cmsis-nn PRIVATE
++          -ffast-math)
++    endif()
++
+     tensorflow_target_sources_glob(tflu GLOB TRUE
+         ${TFLM_PATH}/kernels/cmsis_nn/*.cc)
+ 

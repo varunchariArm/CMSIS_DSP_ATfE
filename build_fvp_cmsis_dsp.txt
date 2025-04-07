@@ -1,0 +1,45 @@
+sudo apt update
+sudo apt upgrade
+sudo apt install python3-pip
+apt install python3.10-venv
+sudo apt-get install build-essential
+sudo apt  install cmake
+
+Download the ATfE from
+https://developer.arm.com/downloads/view/ATFEP
+tar -xvf LLVM-ET-Arm-20.0.0-Beta-Linux-AArch64.tar.xz
+export PATH=$PATH:<path_to>/LLVM-ET-Arm-20.0.0-Linux-AArch64/bin
+
+wget https://developer.arm.com/-/media/Arm%20Developer%20Community/Downloads/OSS/FVP/Corstone-300/FVP_Corstone_SSE-300_11.22_20_Linux64_armv8l.tgz
+mkdir FVP_Corstone_300_11_22
+cd FVP_Corstone_300_11_22/
+tar -xvf ../FVP_Corstone_SSE-300_11.22_20_Linux64_armv8l.tgz
+./FVP_Corstone_SSE-300.sh --i-agree-to-the-contained-eula --force --destination ./ --quiet --no-interactive
+export PATH=$PATH:<path_to>/FVP_Corstone_300_11_22/models/Linux64_armv8l_GCC-9.3/
+
+mkdir atfe
+cd atfe
+git clone https://git.gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u.git
+
+cd ethos-u
+git apply diff_ethosu_cmsisdsp.patch
+
+python3 fetch_externals.py fetch
+
+cd core_software
+git apply diff_core_software.patch
+
+cd ../core_platform
+
+git apply diff_core_platform.patch
+copy cmsis_dsp_example directory to applications/cmsis_dsp
+copy arm-llvm-clang.cmake to cmake/toolchain/arm-llvm-clang.cmake
+copy platform_clang.ld to targets/corstone-300/platform_clang.ld
+
+cmake -B build targets/corstone-300 -DCMAKE_TOOLCHAIN_FILE=<path_to_ethos-u>/core_platform/cmake/toolchain/arm-llvm-clang.cmake -DCMSISCORE=<path_to_ethos-u>/core_software/cmsis_6/CMSIS/Core
+
+cmake --build build -j4
+
+Binary generated in build/applications/cmsis_dsp/cmsis_dsp.elf
+
+./FVP_Corstone_SSE-300_Ethos-U55 -C mps3_board.uart0.shutdown_on_eot=1 -C mps3_board.visualisation.disable-visualisation=1 -C mps3_board.telnetterminal0.start_telnet=0 -C mps3_board.uart0.out_file=- -C mps3_board.uart0.unbuffered_output=1 -a <path_to_ethos-u>/core_platform/build/applications/cmsis_dsp/cmsis_dsp.elf 

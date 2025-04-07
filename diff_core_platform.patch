@@ -1,0 +1,153 @@
+diff --git a/applications/CMakeLists.txt b/applications/CMakeLists.txt
+index a017575..61a04f3 100644
+--- a/applications/CMakeLists.txt
++++ b/applications/CMakeLists.txt
+@@ -15,17 +15,19 @@
+ # limitations under the License.
+ #
+ 
+-add_subdirectory(baremetal)
++#add_subdirectory(baremetal)
+ 
+-add_subdirectory(driver_unit_tests)
++#add_subdirectory(driver_unit_tests)
+ 
+-add_subdirectory(freertos)
++#add_subdirectory(freertos)
+ 
+ add_subdirectory(hello_world)
+ 
+-add_subdirectory(threadx_demo)
++#add_subdirectory(threadx_demo)
+ 
+-add_subdirectory(message_handler_openamp)
++#add_subdirectory(message_handler_openamp)
++
++add_subdirectory(cmsis_dsp)
+ 
+ if (CMAKE_CXX_COMPILER_ID STREQUAL "ARMClang")
+     # Only armclang supported for now
+diff --git a/cmake/helpers.cmake b/cmake/helpers.cmake
+index c87677d..68503b1 100644
+--- a/cmake/helpers.cmake
++++ b/cmake/helpers.cmake
+@@ -1,5 +1,6 @@
+ #
+-# SPDX-FileCopyrightText: Copyright 2020-2022, 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
++# Copyright (c) 2020-2022 Arm Limited. All rights reserved.
++#
+ # SPDX-License-Identifier: Apache-2.0
+ #
+ # Licensed under the Apache License, Version 2.0 (the License); you may
+@@ -30,7 +31,13 @@ function(ethosu_target_link_options target scope)
+     set_property(GLOBAL PROPERTY ETHOSU_TARGET_LINK_FILE ${LINK_FILE_PATH})
+ 
+     if (ARG_ENTRY)
++      if (CMAKE_CXX_COMPILER_ID STREQUAL "ARMClang")
+         target_link_options(${target} ${scope} --entry Reset_Handler)
++      elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++        target_link_options(${target} ${scope} -e Reset_Handler)
++      else()
++        target_link_options(${target} ${scope} -e Reset_Handler)
++      endif()
+     endif()
+ endfunction()
+ 
+@@ -50,6 +57,10 @@ function(ethosu_eval_link_options target)
+         set(LINK_FILE_EXT ld)
+         set(LINK_FILE_OPTION "-T")
+         set(COMPILER_PREPROCESSOR_OPTIONS -E -x c -P)
++    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++        set(LINK_FILE_EXT ld)
++        set(LINK_FILE_OPTION "-T")
++        set(COMPILER_PREPROCESSOR_OPTIONS -E -x c -P)
+     endif()
+ 
+     if (EXISTS ${LINK_FILE})
+@@ -103,6 +114,8 @@ function(ethosu_add_executable target)
+         target_link_options(${target} PRIVATE --map --list=${target}.map)
+     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+         target_link_options(${target} PRIVATE -Xlinker -Map=${target}.map)
++    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++        target_link_options(${target} PRIVATE -Xlinker -Map=${target}.map)
+     endif()
+ 
+     ethosu_add_binaries(${target})
+@@ -153,6 +166,8 @@ function(ethosu_add_binaries target)
+     set(SCRIPTS_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../scripts)
+ 
+     add_custom_command(TARGET ${target} POST_BUILD
++        #COMMAND ${Python3_EXECUTABLE} ${SCRIPTS_DIR}/generate_binaries.py --output ./fw $<TARGET_FILE:${target}> -d ${target}.d
++        #DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${target}.d
+         COMMAND ${Python3_EXECUTABLE} ${SCRIPTS_DIR}/generate_binaries.py --output ./fw $<TARGET_FILE:${target}>
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+         COMMENT "Generate binaries for ${target}")
+diff --git a/targets/corstone-300/CMakeLists.txt b/targets/corstone-300/CMakeLists.txt
+index bc91603..b4461dc 100644
+--- a/targets/corstone-300/CMakeLists.txt
++++ b/targets/corstone-300/CMakeLists.txt
+@@ -22,7 +22,7 @@
+ set(TARGET_CPU "cortex-m55" CACHE INTERNAL "")
+ 
+ if (NOT CMAKE_TOOLCHAIN_FILE)
+-    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/toolchain/armclang.cmake")
++    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/toolchain/arm-llvm-clang.cmake")
+ endif()
+ 
+ set(ETHOSU_TARGET_NPU_CONFIG "ethos-u55-128" CACHE STRING "NPU configuration")
+@@ -105,7 +105,7 @@ foreach(register ${registers})
+ endforeach()
+ 
+ # Linker script
+-set(LINK_FILE platform CACHE STRING "Link file")
++set(LINK_FILE platform_clang CACHE STRING "Link file")
+ 
+ ethosu_target_link_options(ethosu_target_link INTERFACE
+     LINK_FILE ${LINK_FILE}
+diff --git a/targets/corstone-300/retarget.c b/targets/corstone-300/retarget.c
+index 0ddf042..15757ca 100644
+--- a/targets/corstone-300/retarget.c
++++ b/targets/corstone-300/retarget.c
+@@ -61,6 +61,10 @@ extern FILEHANDLE _open(const char * /*name*/, int /*openmode*/);
+ 
+ #endif
+ 
++// #if !(defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6100100)) && defined(__clang__)
++// #include <semihost.h>
++// #endif
++
+ /* Standard IO device name defines. */
+ const char __stdin_name[] __attribute__((aligned(4)))  = "STDIN";
+ const char __stdout_name[] __attribute__((aligned(4))) = "STDOUT";
+@@ -321,3 +325,30 @@ int ferror(FILE *f) {
+     return EOF;
+ }
+ #endif
++
++#if !(defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6100100)) && defined(__clang__)
++int sys_semihost_get_cmdline(char *buf, int size) {
++    (void)buf;
++    (void)size;
++
++    return 0;
++}
++
++int sys_semihost_getc(FILE *file) {
++    (void)file;
++    return 0;
++}
++
++int sys_semihost_putc(char c, FILE *file) {
++    (void)file;
++    (void)c;
++    return UartPutc(c);
++}
++
++static FILE __stdio = FDEV_SETUP_STREAM(sys_semihost_putc, sys_semihost_getc, NULL, _FDEV_SETUP_RW);
++
++FILE *const stdin = &__stdio;
++
++__strong_reference(stdin, stdout);
++__strong_reference(stdin, stderr);
++#endif
+\ No newline at end of file

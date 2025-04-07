@@ -1,0 +1,16 @@
+diff --git a/externals.json b/externals.json
+index 1d82d6d..cedf68e 100644
+--- a/externals.json
++++ b/externals.json
+@@ -39,6 +39,11 @@
+             "fetchurl": "https://github.com/ARM-software/CMSIS-NN.git",
+             "revision": "main"
+         },
++        {
++            "path": "core_software/cmsis-dsp",
++            "fetchurl": "https://github.com/ARM-software/CMSIS-DSP.git",
++            "revision": "main"
++        },
+         {
+             "path": "core_software/cmsis-view",
+             "fetchurl": "https://github.com/ARM-software/CMSIS-View.git",

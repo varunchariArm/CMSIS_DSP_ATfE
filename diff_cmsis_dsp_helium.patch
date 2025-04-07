@@ -1,0 +1,44 @@
+diff --git a/Source/CMakeLists.txt b/Source/CMakeLists.txt
+index e0626ad8..fafbdef1 100755
+--- a/Source/CMakeLists.txt
++++ b/Source/CMakeLists.txt
+@@ -7,14 +7,14 @@ SET(DSP ${CMAKE_CURRENT_SOURCE_DIR}/..)
+ 
+ option(NEON "Neon acceleration" OFF)
+ option(NEONEXPERIMENTAL "Neon experimental acceleration" OFF)
+-option(HELIUMEXPERIMENTAL "Helium experimental acceleration" OFF)
++option(HELIUMEXPERIMENTAL "Helium experimental acceleration" ON)
+ option(LOOPUNROLL "Loop unrolling" ON)
+ option(ROUNDING "Rounding" OFF)
+ option(MATRIXCHECK "Matrix Checks" OFF)
+-option(HELIUM "Helium acceleration (MVEF and MVEI supported)" OFF)
+-option(MVEF "MVEF intrinsics supported" OFF)
+-option(MVEI "MVEI intrinsics supported" OFF)
+-option(MVEFLOAT16 "Float16 MVE intrinsics supported" OFF)
++option(HELIUM "Helium acceleration (MVEF and MVEI supported)" ON)
++option(MVEF "MVEF intrinsics supported" ON)
++option(MVEI "MVEI intrinsics supported" ON)
++option(MVEFLOAT16 "Float16 MVE intrinsics supported" ON)
+ option(DISABLEFLOAT16 "Disable building float16 kernels" OFF)
+ option(HOST "Build for host" OFF)
+ option(AUTOVECTORIZE "Prefer autovectorizable code to one using C intrinsics" OFF)
+diff --git a/Source/configDsp.cmake b/Source/configDsp.cmake
+index 834fe4b0..5949069e 100644
+--- a/Source/configDsp.cmake
++++ b/Source/configDsp.cmake
+@@ -36,6 +36,7 @@ if (NEONEXPERIMENTAL)
+ endif()
+ 
+ if (MVEFLOAT16)
++    MESSAGE(STATUS "MVEFLOAT16 option enabled") 
+     target_compile_definitions(${project} PRIVATE ARM_MATH_MVE_FLOAT16) 
+ endif()
+ 
+@@ -44,6 +45,7 @@ target_include_directories(${project} PRIVATE "${DSP}/PrivateInclude")
+ if (MVEI OR MVEF OR HELIUM OR NEON OR NEONEXPERIMENTAL)
+     # By default, GCC does not enable implicit conversion between vectors of different numbers or types of elements
+     # which is required by some code in CMSIS-DSP
++    MESSAGE(STATUS "Helium option enabled")
+     if (LAXVECTORCONVERSIONS)
+        target_compile_options(${project} PRIVATE $<$<STREQUAL:${CMAKE_C_COMPILER_ID},GNU>:-flax-vector-conversions>)
+        target_compile_options(${project} PRIVATE $<$<STREQUAL:${CMAKE_C_COMPILER_ID},ARMClang>:-flax-vector-conversions=integer>)
