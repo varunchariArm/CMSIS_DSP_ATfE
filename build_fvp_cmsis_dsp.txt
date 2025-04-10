@@ -6,9 +6,9 @@ sudo apt-get install build-essential
 sudo apt  install cmake
 
 Download the ATfE from
-https://developer.arm.com/downloads/view/ATFEP
-tar -xvf LLVM-ET-Arm-20.0.0-Beta-Linux-AArch64.tar.xz
-export PATH=$PATH:<path_to>/LLVM-ET-Arm-20.0.0-Linux-AArch64/bin
+https://github.com/arm/arm-toolchain/releases
+tar -xvf ATfE-20.1.0-Linux-AArch64.tar.xz
+export PATH=$PATH:<path_to>/ATfE-20.1.0-Linux-AArch64/bin
 
 wget https://developer.arm.com/-/media/Arm%20Developer%20Community/Downloads/OSS/FVP/Corstone-300/FVP_Corstone_SSE-300_11.22_20_Linux64_armv8l.tgz
 mkdir FVP_Corstone_300_11_22

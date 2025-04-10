@@ -15,22 +15,18 @@ EXAMPLE_RESOURCES="$SCRIPT_PATH/resources_cmsis_dsp_atfe"
 
 # Download and extract LLVM-ET (user must manually download and provide path)
 if [[ "${ARCH}" == "aarch64" ]] || [[ "${ARCH}" == "arm64" ]]; then
-  LLVM_TAR="LLVM-ET-Arm-20.0.0-Beta-Linux-AArch64.tar.xz"
-  LLVM_DIR="LLVM-ET-Arm-20.0.0-Linux-AArch64"
+  LLVM_TAR="ATfE-20.1.0-Linux-AArch64.tar.xz"
+  LLVM_DIR="ATfE-20.1.0-Linux-AArch64"
 elif [[ "${ARCH}" == "x86_64" ]]; then
-  LLVM_TAR="LLVM-ET-Arm-20.0.0-Beta-Linux-x86_64.tar.xz"
-  LLVM_DIR="LLVM-ET-Arm-20.0.0-Linux-x86_64"
+  LLVM_TAR="ATfE-20.1.0-Linux-x86_64.tar.xz"
+  LLVM_DIR="ATfE-20.1.0-Linux-x86_64"
 else
   echo "Error: only x86-64 & aarch64/arm64 architecture is supported for now!"; exit 1;
 fi
 
 if [ ! -d "$LLVM_DIR" ]; then
-    echo "Please download the LLVM toolchain ($LLVM_TAR) and place it in the current directory."
-    read -p "Press enter after placing $LLVM_TAR here..."
-    if [ ! -f "$LLVM_TAR" ]; then
-        echo "ERROR: $LLVM_TAR not found!"
-        exit 1
-    fi
+    echo "Downloading LLVM Toolchain (ATFE) ...."
+    wget https://github.com/arm/arm-toolchain/releases/download/release-20.1.0-ATfE/$LLVM_TAR
     tar -xvf "$LLVM_TAR"
 fi
 
